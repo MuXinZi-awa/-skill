@@ -21,10 +21,8 @@ def load_cfg():
 
 
 _CFG = load_cfg()
-HB = _CFG.get("hb_project_path") or os.environ.get("XIAOHEIHE_HB") or ""
-if not HB or not os.path.isdir(os.path.join(HB, "src")):
-    raise RuntimeError("config.json 未配置 hb_project_path——见 README")
-sys.path.insert(0, os.path.join(HB, "src"))
+LIB_DIR = os.path.join(SKILL_DIR, "scripts", "lib")
+sys.path.insert(0, LIB_DIR)
 from config_loader import load_config
 from auth_manager import HTTPAuthManager
 from custom_signer import CustomSigner
@@ -47,13 +45,13 @@ def log_action(action, link_id, text):
 
 COMMENT_PATH = "/bbs/app/comment/create"
 COMMENT_URL = "https://api.xiaoheihe.cn/bbs/app/comment/create"
-CONFIG = os.path.join(HB, "config", "config.json")
+CONFIG = os.path.join(SKILL_DIR, "config.json")
 
 
 def build_client(cfg):
     req = cfg["request"]
     st = cfg["auth"].get("state_file", "state/auth_state.json")
-    am = HTTPAuthManager(os.path.join(HB, st))
+    am = HTTPAuthManager(os.path.join(SKILL_DIR, st))
     cookie = am.load_cookie() or ""
     if not cookie:
         cookie = str(req.get("cookie", "")).strip()

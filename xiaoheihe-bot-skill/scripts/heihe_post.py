@@ -27,10 +27,8 @@ def load_cfg():
 
 
 _CFG = load_cfg()
-HB = _CFG.get("hb_project_path") or os.environ.get("XIAOHEIHE_HB") or ""
-if not HB or not os.path.isdir(os.path.join(HB, "src")):
-    raise RuntimeError("config.json 未配置 hb_project_path（heibox-comment-bot 项目路径）——见 README")
-sys.path.insert(0, os.path.join(HB, "src"))
+LIB_DIR = os.path.join(SKILL_DIR, "scripts", "lib")
+sys.path.insert(0, LIB_DIR)
 from config_loader import load_config
 from auth_manager import HTTPAuthManager
 from custom_signer import CustomSigner
@@ -54,14 +52,14 @@ def log_action(action, link_id, title, topic):
 
 POST_PATH = "/bbs/app/api/link/post"
 POST_URL = "https://api.xiaoheihe.cn/bbs/app/api/link/post"
-CONFIG = os.path.join(HB, "config", "config.json")
+CONFIG = os.path.join(SKILL_DIR, "config.json")
 LIBRARY = os.path.join(SKILL_DIR, "post_library.json")
 
 
 def build_client(cfg):
     req = cfg["request"]
     st = cfg["auth"].get("state_file", "state/auth_state.json")
-    am = HTTPAuthManager(os.path.join(HB, st))
+    am = HTTPAuthManager(os.path.join(SKILL_DIR, st))
     cookie = am.load_cookie() or ""
     if not cookie:
         cookie = str(req.get("cookie", "")).strip()
