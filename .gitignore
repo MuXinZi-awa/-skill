@@ -1,0 +1,12 @@
+# 敏感配置（真实凭据，绝不上传）
+config.json
+state/
+auth_state.json
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 系统文件
+Thumbs.db
+.DS_Store

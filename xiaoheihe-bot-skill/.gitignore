@@ -1,0 +1,24 @@
+# 隐私文件——绝不提交
+config.json
+*.jsonc
+
+# 登录态 / cookie
+state/
+auth_state.json
+cookie*.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 日志 / 本地记录
+logs/
+*.log
+水贴记录*.md
+qrcode*.png
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -1,6 +1,7 @@
 # 小黑盒 Bot Skill（xiaoheihe-bot-skill）
 
-小黑盒（游戏社区）自动**发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 水贴记录**的封装工具。
+小黑盒（游戏社区）自动**发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 扫码登录 / 水贴记录**的封装工具。
+**自包含**：签名 / cookie / 客户端 / 登录逻辑全部内置（`scripts/lib/`），不依赖任何外部项目。
 设计给 **AI Agent**（如 HanaAgent）或普通用户直接用命令行调用，内容由调用方自己写，不走额外 LLM 中转。
 
 > ⚠️ 仅供学习交流。自动发帖/评论有**封号风险**，请低频使用、谨慎操作，后果自负。
@@ -9,6 +10,7 @@
 
 | 命令 | 说明 |
 |---|---|
+| `heihe_login.py` | 扫码登录（生成/更新 cookie） |
 | `heihe_post.py` | 发帖（指定内容或从帖子库 `post_library.json` 发） |
 | `heihe_comment.py` | 评论指定帖子 |
 | `heihe_feed.py` | 看热门帖子（按话题筛选） |
@@ -19,69 +21,64 @@
 
 ## 安装
 
-### 1. 克隆依赖项目（签名/cookie 实现）
+只需 Python 3 + `requests`（登录扫码需要 `qrcode`）：
 
 ```bash
-git clone https://github.com/2646617098/heibox-comment-bot
-cd heibox-comment-bot
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1     # Windows；macOS/Linux 用 source .venv/bin/activate
-pip install -r requirements.txt
+pip install requests qrcode
 ```
 
-### 2. 扫码登录（生成 cookie）
+（也可以用 venv：`python -m venv .venv` → 激活 → 装上面两个）
+
+## 扫码登录（生成 cookie）
+
+登录态保存在本 skill 的 `state/auth_state.json`。用自带的登录脚本：
 
 ```bash
-python src/main.py --login-qr
+python scripts\heihe_login.py
 ```
 
-手机小黑盒 App → 个人主页右上角扫码 → cookie 自动保存到 `state/auth_state.json`。
-（如终端二维码溢出，把打印的 `login url` 用任意二维码工具转成图片再扫）
+终端会显示二维码（或保存 `qrcode.png`），手机小黑盒 App → 个人主页右上角扫码 → 登录态自动保存到 `state/auth_state.json`。登录过期时重跑一次即可。
 
-### 3. 配置本 skill
+> 登录脚本使用 `scripts/lib` 内置的签名/cookie 实现，**完全自包含**，不需要任何外部项目。
+
+## 配置
+
+复制模板：
 
 ```bash
-git clone https://github.com/你的用户名/xiaoheihe-bot-skill
-cd xiaoheihe-bot-skill
 Copy-Item config.example.json config.json
 ```
 
-编辑 `config.json`：
+编辑 `config.json` 关键字段：
 
-```json
-{
-  "hb_project_path": "C:\\path\\to\\heibox-comment-bot",
-  "log_file": ""
-}
-```
-
-- `hb_project_path`：heibox-comment-bot 项目的绝对路径（必填）
+- `ai.base_url` / `ai.api_key` / `ai.model`：OpenAI 兼容接口（如 DeepSeek：`https://api.deepseek.com/v1` + 你的 key + `deepseek-chat`）
+- `request.default_query.heybox_id` / `device_id`：一般不用动（cookie 登录后自动带）
 - `log_file`：可选，水贴记录 md 的路径（留空不记录）
+
+> ⚠️ `config.json` 含 api_key，已被 `.gitignore` 排除，**不要提交到任何仓库**。
 
 ## 用法
 
-所有脚本用 **heibox-comment-bot 的 venv python** 运行：
+用装了 requests 的 python 运行（venv 或系统 python 均可）：
 
 ```bash
-PY="C:\path\to\heibox-comment-bot\.venv\Scripts\python.exe"
-
 # 发帖（直接指定）
-$PY scripts\heihe_post.py --title "标题" --text "正文" --topic-id 20588
+python scripts\heihe_post.py --title "标题" --text "正文" --topic-id 20588
 
 # 发帖子库第一篇（帖子库在 skill 根目录 post_library.json）
-$PY scripts\heihe_post.py --library 0
+python scripts\heihe_post.py --library 0
 
 # 看热帖（盒友杂谈）
-$PY scripts\heihe_feed.py --topic-id 7214 --limit 10
+python scripts\heihe_feed.py --topic-id 7214 --limit 10
 
 # 看帖
-$PY scripts\heihe_fetch.py --link-id 188908465
+python scripts\heihe_fetch.py --link-id 188908465
 
 # 评论（先看帖再评论）
-$PY scripts\heihe_comment.py --link-id 188908465 --text "评论内容"
+python scripts\heihe_comment.py --link-id 188908465 --text "评论内容"
 
 # 删帖（不可逆，需 --yes）
-$PY scripts\heihe_delete.py --link-id 188908465 --yes
+python scripts\heihe_delete.py --link-id 188908465 --yes
 ```
 
 ### 话题 ID 参考
@@ -96,13 +93,13 @@ $PY scripts\heihe_delete.py --link-id 188908465 --yes
 
 ## 给 AI Agent 用（HanaAgent）
 
-本目录本身就是 **HanaAgent skill** 包：把整个仓库安装为 skill 后，Agent 读 `SKILL.md` 即可调用。
+本目录本身就是 **HanaAgent skill 包**：把整个仓库安装为 skill 后，Agent 读 `SKILL.md` 即可调用。
 `SKILL.md` 里有完整流程说明（发帖/评论/水贴的典型链路）。
 
 ## 隐私
 
 - 仓库**不含任何密钥/配置/cookie**——`config.json`、`state/`、日志均被 `.gitignore` 排除
-- 登录态在 heibox-comment-bot 项目的 `auth_state.json`（该仓库自己的 .gitignore 已排除）
+- 登录态在 `state/auth_state.json`（已忽略，不入库）
 - 请勿把 `config.json`、`auth_state.json` 提交到任何仓库
 
 ## 免责声明

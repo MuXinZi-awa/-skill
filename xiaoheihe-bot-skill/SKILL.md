@@ -13,15 +13,15 @@ description: >
 
 ## 依赖
 
-1. **heibox-comment-bot**（签名/cookie 实现）——见 README 安装：
-   `git clone https://github.com/2646617098/heibox-comment-bot`
-   建 venv 装依赖后扫码登录（生成 state/auth_state.json）
-2. **config.json**（本 skill 根目录）——复制 config.example.json 填 `hb_project_path`（heibox-comment-bot 的路径）
+1. **requests**（唯一 Python 依赖）
+2. **config.json**（本 skill 根目录）——复制 config.example.json 后填 `ai.api_key` / `ai.base_url` / `ai.model`（见 README）
+3. **登录态**：`state/auth_state.json`（扫码登录生成——见 README「扫码登录」一节）
 
-## 脚本（scripts/，用 heibox 项目的 venv python 运行）
+## 脚本（scripts/，用装了 requests 的 python 运行）
 
 | 脚本 | 功能 | 用法 |
 |---|---|---|
+| heihe_login.py | 扫码登录 | `python heihe_login.py`（生成/更新 cookie） |
 | heihe_post.py | 发帖 | `--title T --text X [--topic-id 20588]` 或 `--library [索引]` / `--list` |
 | heihe_comment.py | 评论 | `--link-id 181177992 --text "内容"` |
 | heihe_feed.py | 看热帖 | `[--topic-id 7214] [--limit 10]` |
@@ -42,4 +42,4 @@ description: >
 - 发帖/评论/删帖是写操作，**必须用户明确要求**才执行
 - 频率：发帖每天 ≤2、评论每小时 ≤3（防风控）
 - 触发验证码（show_captcha）就停，等用户网页端解
-- cookie 在 heibox 项目的 auth_state.json（不入库）
+- cookie 在 skill 的 state/auth_state.json（不入库）
