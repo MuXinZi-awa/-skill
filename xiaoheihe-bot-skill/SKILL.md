@@ -58,6 +58,20 @@ python scripts\heihe_vision.py --url "https://cdn.xiaoheihe.cn/.../xxx.jpg"
 
 注意：图帖正文常为空属正常；`--images` 是宽匹配，可能捎带头像/图标等非正文图，Agent 自行甄别。
 
+## 登录会话（重要，踩过坑）
+
+小黑盒有两套登录会话，功能权限不同（2026-08-25 实测）：
+
+| 会话 | 生成方式 | 发帖/评论/看帖 | 评论点赞 comment/support | 帖子点赞 workshopapi |
+|---|---|---|---|---|
+| 扫码会话 | `heihe_login.py` 扫码 | ✅ | ❌（返回「账号状态异常」） | ✅ |
+| 浏览器会话 | 浏览器网页登录 | ✅ | ✅ | ✅ |
+
+- **评论点赞必须用浏览器会话**：浏览器登录账号 → 复制 `.xiaoheihe.cn` 域的 cookie（`user_heybox_id` / `user_pkey` / `x_xhh_tokenid`）→ 写入 `state/auth_state.json` 的 cookie 字段（`source: "browser"`）
+- 浏览器 cookie 有效期约 7 天，过期后重新登录复制
+- 扫码会话仍可用于发帖/评论/看帖；帖子点赞两套会话都通
+- 部分浏览器会话还有 `pkey`（= user_pkey 的非 HttpOnly 镜像），`heihe_like.py` 已自动补齐，无需手动处理
+
 ## 安全
 
 - 发帖/评论/删帖是写操作，**必须用户明确要求**才执行

@@ -44,6 +44,8 @@ python scripts\heihe_login.py
 终端会显示二维码（或保存 `qrcode.png`），手机小黑盒 App → 个人主页右上角扫码 → 登录态自动保存到 `state/auth_state.json`。登录过期时重跑一次即可。
 
 > 登录脚本使用 `scripts/lib` 内置的签名/cookie 实现，**完全自包含**，不需要任何外部项目。
+>
+> ⚠️ 注意：**评论点赞（comment/support）只认浏览器 web 会话**，扫码会话会被拒（「账号状态异常」）。需要点赞时用浏览器登录账号，把 `.xiaoheihe.cn` 的 cookie（`user_heybox_id` / `user_pkey` / `x_xhh_tokenid`）写入 `state/auth_state.json`（详见 SKILL.md「登录会话」章节）。
 
 ## 配置
 
