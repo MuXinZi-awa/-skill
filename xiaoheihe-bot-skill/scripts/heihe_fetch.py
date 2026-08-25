@@ -30,9 +30,48 @@ from heybox_client import HeyboxCommentClient
 CONFIG = os.path.join(SKILL_DIR, "config.json")
 
 
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".gif", ".webp")
+IMAGE_HOST_HINTS = ("/img/", "/image/", "/pic/", "/photo/", "cdn", "heybox")
+
+
+def looks_like_image(s: str) -> bool:
+    """启发式判断：像图片 URL 的字符串（宽匹配，不怕字段名变化）"""
+    if not isinstance(s, str):
+        return False
+    low = s.lower()
+    if not low.startswith("http"):
+        return False
+    if 10 <= len(s) <= 8192:
+        if low.rstrip("?").rstrip("/").endswith(IMAGE_EXTS):
+            return True
+        if any(h in low for h in IMAGE_HOST_HINTS):
+            # 有图片域名/路径特征且不带明显 query 的，收下
+            if "?" not in low or any(h in low.split("?")[0] for h in IMAGE_HOST_HINTS):
+                return True
+    return False
+
+
+def find_image_urls(obj, out=None):
+    """递归遍历 API 返回结构，收集所有像图片 URL 的字符串"""
+    if out is None:
+        out = set()
+    if isinstance(obj, dict):
+        for v in obj.values():
+            find_image_urls(v, out)
+    elif isinstance(obj, list):
+        for it in obj:
+            find_image_urls(it, out)
+    elif looks_like_image(obj):
+        out.add(obj)
+    return sorted(out)
+
+
 def main():
     p = argparse.ArgumentParser(description="小黑盒看帖（xiaoheihe-bot-skill）")
     p.add_argument("--link-id", required=True, type=int)
+    p.add_argument("--with-comments", action="store_true", help="同时查看评论区")
+    p.add_argument("--limit", type=int, default=10, help="最多打印评论条数（默认10）")
+    p.add_argument("--images", action="store_true", help="列出帖子里发现的图片 URL（图帖用，配合 heihe_vision.py）")
     a = p.parse_args()
 
     cfg = load_config(CONFIG)
@@ -52,15 +91,37 @@ def main():
         timeout_seconds=int(req.get("timeout_seconds", 15)),
     )
     r = client.fetch_post_content(link_id=a.link_id, page=1, index=1, limit=20)
+    data = getattr(r, "raw", None) or getattr(r, "data", None) or {}
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except Exception:
+            data = {}
+
     print("[看帖] %s:" % a.link_id)
-    try:
-        raw = getattr(r, "raw", None) or getattr(r, "data", None)
-        if raw:
-            print(json.dumps(raw, ensure_ascii=False)[:1500])
-        else:
-            print(str(r)[:1500])
-    except Exception:
-        print(str(r)[:1500])
+    content = client._extract_link_content(data)
+    if content:
+        print("【正文】", content[:800])
+    else:
+        print("（正文获取失败，原始数据前 500 字：）")
+        print(json.dumps(data, ensure_ascii=False)[:500])
+
+    if a.images:
+        imgs = find_image_urls(data)
+        print("【图片】共 %d 张:" % len(imgs))
+        for i, u in enumerate(imgs, 1):
+            print("  %d. %s" % (i, u))
+        if imgs:
+            print("（用 python scripts\\heihe_vision.py --url \"<URL>\" 查看图片内容）")
+
+    if a.with_comments:
+        comments = client._extract_comments(data)
+        print("【评论】共 %d 条（显示前 %d 条）:" % (len(comments), a.limit))
+        for c in comments[:a.limit]:
+            name = c.get("username") or "?"
+            text = (c.get("text") or "")[:120]
+            floor = c.get("floor_num") or ""
+            print("  %s楼 %s: %s" % (floor, name, text))
 
 
 if __name__ == "__main__":

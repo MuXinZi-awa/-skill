@@ -1,4 +1,99 @@
 {
+  "request": {
+    "base_url": "https://api.xiaoheihe.cn/bbs/app/comment/create",
+    "req_path": "/bbs/app/comment/create",
+    "timeout_seconds": 15,
+    "default_query": {
+      "os_type": "web",
+      "app": "heybox",
+      "client_type": "web",
+      "version": "999.0.4",
+      "web_version": "2.5",
+      "x_client_type": "web",
+      "x_app": "heybox_website",
+      "heybox_id": "REPLACE_ME",
+      "x_os_type": "Windows",
+      "device_info": "Chrome",
+      "device_id": "REPLACE_ME"
+    },
+    "link_tree": {
+      "url": "https://api.xiaoheihe.cn/bbs/app/link/tree",
+      "req_path": "/bbs/app/link/tree",
+      "h_src": ""
+    },
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+      "Origin": "https://www.xiaoheihe.cn",
+      "Referer": "https://www.xiaoheihe.cn/",
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "cookie": "",
+    "feeds": {
+      "req_path": "/bbs/app/feeds",
+      "url": "https://api.xiaoheihe.cn/bbs/app/feeds"
+    }
+  },
+  "auth": {
+    "state_file": "state/auth_state.json",
+    "login": {
+      "enabled": false,
+      "url": "https://api.example.com/login",
+      "method": "POST",
+      "query": {},
+      "headers": {
+        "User-Agent": "Mozilla/5.0"
+      },
+      "body_template": {
+        "username": "{username}",
+        "password": "{password}"
+      }
+    }
+  },
+  "ai": {
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key": "YOUR_DEEPSEEK_API_KEY",
+    "model": "deepseek-chat",
+    "timeout_seconds": 300,
+    "debug_log_file": "logs/ai_debug.jsonl",
+    "prompt_profile": "default",
+    "system_prompt": "你擅长写有意思的中文社区评论。",
+    "user_prompt_template": "",
+    "fallback_model": "",
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "presence_penalty": 1.5,
+    "repetition_penalty": 1.0,
+    "frequency_penalty": 0.0,
+    "max_tokens": 20000
+  },
+  "vision": {
+    "enabled": true,
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key": "",
+    "model": "deepseek-v4-flash-vision-exp",
+    "timeout_seconds": 120,
+    "detail": "low",
+    "prompt": "你是小黑盒游戏社区助手。请描述这张图片的内容：画面主体、场景、图中文字、氛围。如果与游戏相关（截图、攻略、梗图、表情包），请指出游戏与关键细节。描述要足够详细，让看不到图片的人能理解帖子内容、写出恰当的社区评论。"
+  },
+  "policy": {
+    "max_retries": 2,
+    "retry_backoff_seconds": 3,
+    "min_interval_seconds": 2,
+    "max_interval_seconds": 6,
+    "circuit_breaker_failures": 5
+  },
+  "log": {
+    "audit_file": "logs/comment_audit.jsonl"
+  },
+  "auto": {
+    "default_batch_limit": 3,
+    "default_min_gap_seconds": 300,
+    "default_max_gap_seconds": 600,
+    "default_max_per_hour": 10,
+    "event_log_file": "logs/auto_publish.jsonl"
+  },
   "hb_project_path": "",
   "log_file": ""
 }

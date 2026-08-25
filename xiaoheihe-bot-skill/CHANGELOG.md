@@ -1,5 +1,23 @@
 # 更新日志（Changelog）
 
+## v0.3.0（2026-08-25）
+
+**新增**
+- `heihe_vision.py`：**视觉辅助**——图帖图片（URL/本地文件）→ 视觉模型 → 文字描述。图帖不再被拒之门外
+- `heihe_fetch.py` 新增 `--images`：递归挖出帖子原始数据里的图片 URL（不依赖具体字段名，宽匹配）
+- `config.json` 新增 `vision` 配置块（模型：DeepSeek `deepseek-v4-flash-vision-exp`，api_key 留空自动复用 `ai.api_key`）
+
+**修复**
+- `config.example.json` 此前只有 2 个字段、与真实配置严重脱节，已补全为完整结构（含 vision 块，key 用占位符）
+- 清理 `hb_project_path` 残留（v0.2.0 已自包含，该字段不再使用）
+- SKILL.md frontmatter 安装说明残留 v0.1 的 heibox-comment-bot 依赖描述，已修正
+
+**文档**
+- SKILL.md / README.md 新增「视觉辅助（图帖）」章节与典型流程
+- 脚本表补全 v0.2.x 遗漏（heihe_like / heihe_upload / fetch --with-comments）
+
+---
+
 ## v0.2.2（2026-08-25 午后）
 
 **新增**

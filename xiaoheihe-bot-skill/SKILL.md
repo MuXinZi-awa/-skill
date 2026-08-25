@@ -3,12 +3,12 @@ name: xiaoheihe-bot
 description: >
   小黑盒（游戏社区）自动发帖 / 评论 / 水贴 / 删帖 / 看帖工具。Agent 直接调用小黑盒 API。
   触发场景：用户提到小黑盒、发帖、水贴、刷评论、删帖、社区运营、自动回帖、帖子库。
-  安装：先按 README 准备依赖（heibox-comment-bot + 扫码登录），再复制 config.example.json 为 config.json 填 hb_project_path。
+  安装：复制 config.example.json 为 config.json 填 api_key，扫码登录见 README（自包含，无外部项目依赖）。
 ---
 
 # 小黑盒 Bot Skill
 
-直接调小黑盒 API 的封装（发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 水贴记录）。
+直接调小黑盒 API 的封装（发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 水贴记录 / 视觉看图）。
 内容由 Agent 自己写（社区风格、查证设定），不走外部 LLM。
 
 ## 依赖
@@ -26,18 +26,36 @@ description: >
 | heihe_comment.py | 评论 / 楼中楼回复 | `--link-id X --text "内容" [--reply-id 父评论id --root-id 根评论id]` |
 | heihe_like.py | 评论点赞 | `--comment-id X` |
 | heihe_feed.py | 看热帖 | `[--topic-id 7214] [--limit 10]` |
-| heihe_fetch.py | 看帖（含评论） | `--link-id X [--with-comments]`（评论前先读帖） |
+| heihe_fetch.py | 看帖（含评论） | `--link-id X [--with-comments]`；图帖加 `--images` 列出图片 URL |
+| **heihe_vision.py** | **视觉辅助（图帖）** | `--url "图片URL"` 或 `--file 本地路径`（可多个）；把图片变成文字描述 |
 | heihe_delete.py | 删帖 / 删评论 | `--link-id X --yes` 或 `--comment-id X --yes` |
 | heihe_upload.py | 图片上传（调试中） | 需服务端分配 key，见 CHANGELOG 已知遗留 |
 
-- 帖子库：skill 根目录 `post_library.json`（Agent 写的帖子存档，发帖用 `--library`）
+- 帖子库：skill 根目录 `post_library.json`（Agent 写的帖子存档，发帖用 `--library`；不入库）
 - 水贴记录：config.json 配 `log_file` 后，发帖/评论自动追加 markdown 记录
 
 ## 典型流程
 
 - **发一帖**：选主题 → Agent 写（查设定/社区风格）→ 加帖子库 → heihe_post --library
 - **特定帖子留言**：heihe_fetch 看内容 → Agent 读帖写评论 → heihe_comment 发
+- **图帖（图片帖）**：heihe_fetch --images 挖出图片 URL → heihe_vision --url "URL" 把图片变描述 → Agent 看懂图 → 写评论 → heihe_comment 发
 - **水贴**：heihe_feed 看热帖 → 挑目标 → fetch 看内容 → 写评论 → 发（留 md 记录）
+
+## 视觉辅助（图帖）
+
+小黑盒很多帖子是图片帖（截图/攻略/梗图/表情包），文字是空的。此时用视觉模型把图片变成描述，Agent 才能看懂帖子内容再写评论。
+
+- 模型：DeepSeek `deepseek-v4-flash-vision-exp`（官方实验性视觉模型，OpenAI 兼容，每图 ≤384 token）
+- 配置：`config.json` → `vision` 块（`enabled` / `base_url` / `api_key` 留空复用 `ai.api_key` / `model` / `detail` / `prompt`）
+- 依赖：仅 requests（与现有脚本一致，不新增）
+
+```bash
+# 图帖完整链路：挖 URL → 看图片内容
+python scripts\heihe_fetch.py --link-id 188811400 --images
+python scripts\heihe_vision.py --url "https://cdn.xiaoheihe.cn/.../xxx.jpg"
+```
+
+注意：图帖正文常为空属正常；`--images` 是宽匹配，可能捎带头像/图标等非正文图，Agent 自行甄别。
 
 ## 安全
 

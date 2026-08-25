@@ -1,6 +1,6 @@
 # 小黑盒 Bot Skill（xiaoheihe-bot-skill）
 
-小黑盒（游戏社区）自动**发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 扫码登录 / 水贴记录**的封装工具。
+小黑盒（游戏社区）自动**发帖 / 评论 / 看热帖 / 看帖 / 删帖 / 点赞 / 带图发帖 / 扫码登录 / 视觉看图 / 水贴记录**的封装工具。
 **自包含**：签名 / cookie / 客户端 / 登录逻辑全部内置（`scripts/lib/`），不依赖任何外部项目。
 设计给 **AI Agent**（如 HanaAgent）或普通用户直接用命令行调用，内容由调用方自己写，不走额外 LLM 中转。
 
@@ -11,11 +11,14 @@
 | 命令 | 说明 |
 |---|---|
 | `heihe_login.py` | 扫码登录（生成/更新 cookie） |
-| `heihe_post.py` | 发帖（指定内容或从帖子库 `post_library.json` 发） |
-| `heihe_comment.py` | 评论指定帖子 |
+| `heihe_post.py` | 发帖（支持带图，或从帖子库 `post_library.json` 发） |
+| `heihe_comment.py` | 评论 / 楼中楼回复（`--reply-id` / `--root-id`） |
+| `heihe_like.py` | 评论点赞 |
 | `heihe_feed.py` | 看热门帖子（按话题筛选） |
-| `heihe_fetch.py` | 看帖子全文（评论前先读帖） |
-| `heihe_delete.py` | 删除自己的帖子（需 `--yes`） |
+| `heihe_fetch.py` | 看帖子全文 / 评论区（评论前先读帖；图帖加 `--images` 挖图片 URL） |
+| `heihe_vision.py` | **视觉辅助**：图帖图片（URL/本地文件）→ 文字描述（DeepSeek 视觉模型） |
+| `heihe_delete.py` | 删除自己的帖子 / 评论（需 `--yes`） |
+| `heihe_upload.py` | 图片上传（调试中，需服务端分配 key） |
 
 附带：**帖子库**（`post_library.json`，AI 写好的帖子存档）+ **水贴记录**（发帖/评论自动写 markdown 日志）。
 
@@ -52,6 +55,7 @@ Copy-Item config.example.json config.json
 编辑 `config.json` 关键字段：
 
 - `ai.base_url` / `ai.api_key` / `ai.model`：OpenAI 兼容接口（如 DeepSeek：`https://api.deepseek.com/v1` + 你的 key + `deepseek-chat`）
+- `vision`：视觉辅助配置（`enabled` / `base_url` / `api_key` / `model` / `detail` / `prompt`）。模型用 DeepSeek 官方 `deepseek-v4-flash-vision-exp`；`api_key` 留空自动复用 `ai.api_key`
 - `request.default_query.heybox_id` / `device_id`：一般不用动（cookie 登录后自动带）
 - `log_file`：可选，水贴记录 md 的路径（留空不记录）
 
@@ -71,8 +75,12 @@ python scripts\heihe_post.py --library 0
 # 看热帖（盒友杂谈）
 python scripts\heihe_feed.py --topic-id 7214 --limit 10
 
-# 看帖
-python scripts\heihe_fetch.py --link-id 188908465
+# 看帖（含评论区）
+python scripts\heihe_fetch.py --link-id 188908465 --with-comments
+
+# 图帖：挖图片 URL → 看图片内容（视觉辅助）
+python scripts\heihe_fetch.py --link-id 188811400 --images
+python scripts\heihe_vision.py --url "https://cdn.xxx/1.jpg" [--url ...] [--file 本地路径]
 
 # 评论（先看帖再评论）
 python scripts\heihe_comment.py --link-id 188908465 --text "评论内容"
@@ -91,14 +99,31 @@ python scripts\heihe_delete.py --link-id 188908465 --yes
 
 发帖时 `link_tag` 与分区绑定（密教模拟器=27，其他分区请抓包确认）。
 
+## 视觉辅助（图帖）
+
+小黑盒大量帖子是图片帖（游戏截图 / 攻略图 / 梗图 / 表情包），正文文字为空，纯看文本会被「拒之门外」。`heihe_vision.py` 把图片喂给 DeepSeek 视觉模型（`deepseek-v4-flash-vision-exp`），输出图片内容描述，Agent / 用户就能看懂图帖再写评论。
+
+- 图片输入：外部 URL（自动下载）或本地文件，支持多张，支持 JPEG/PNG/GIF/WebP
+- 成本：每张图缩放后 ≤384 token，`detail: low` 再省一笔（512×512 缩放）
+- 不新增依赖：只需 requests（与现有脚本一致）
+
+```bash
+# 典型图帖链路：fetch 挖 URL → vision 看图 → 写评论
+python scripts\heihe_fetch.py --link-id 188811400 --images
+python scripts\heihe_vision.py --url "https://cdn.xiaoheihe.cn/bbs/app/.../photo.jpg"
+python scripts\heihe_comment.py --link-id 188811400 --text "看完图了，这猫回头的角度确实有点东西"
+```
+
+> `--images` 是启发式宽匹配（找所有像图片 URL 的字段），可能捎带头像/图标，Agent 使用时自行甄别正文图。
+
 ## 给 AI Agent 用（HanaAgent）
 
 本目录本身就是 **HanaAgent skill 包**：把整个仓库安装为 skill 后，Agent 读 `SKILL.md` 即可调用。
-`SKILL.md` 里有完整流程说明（发帖/评论/水贴的典型链路）。
+`SKILL.md` 里有完整流程说明（发帖/评论/水贴/图帖的典型链路）。
 
 ## 隐私
 
-- 仓库**不含任何密钥/配置/cookie**——`config.json`、`state/`、日志均被 `.gitignore` 排除
+- 仓库**不含任何密钥/配置/cookie**——`config.json`、`state/`、日志、帖子库均被 `.gitignore` 排除
 - 登录态在 `state/auth_state.json`（已忽略，不入库）
 - 请勿把 `config.json`、`auth_state.json` 提交到任何仓库
 
