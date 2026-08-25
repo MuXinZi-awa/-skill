@@ -1,14 +1,54 @@
 # 更新日志（Changelog）
 
+## v0.2.2（2026-08-25 午后）
+
+**新增**
+- `heihe_like.py`：评论点赞（`--comment-id`，POST /bbs/app/comment/support，`support_type=1`，2026-08-25 抓包确认）
+- **发图全链路破译并跑通**：token/v2（合法 key）→ 腾讯云 COS 直传（手写签名）→ imgheybox URL。用轻轨图实测：PUT 成功、URL 可访问（CDN 缓存带 `?x=1` 绕过）、已发出带图帖（link 188975073）
+
+**修复**
+- `heihe_post.py --image`：img 块**必须带 width/height**，否则服务端静默丢图（首帖踩坑）。支持 `--image "URL,宽,高"` 或自动下载解析尺寸
+- `qcloud_cos_signer.py` 两处 bug：① header 签名时键大小写不匹配（content-type vs Content-Type，KeyError）；② key 前导斜杠导致 path 双斜杠（`//web/...`，COS 403）
+- **发帖带图 URL 要用 COS 源站**（`{bucket}.cos.{region}.myqcloud.com`），不要用 imgheybox CDN（`max-c.com`）：CDN 按 URL 缓存旧图，覆盖源文件后 CDN 仍是旧缓存，带 `?x=1` 浏览器能绕过但小黑盒服务器抓图时不会带 → 帖子图会变成旧图（实测踩坑，link 188975073 已删重发 188975310）
+
+**已知遗留**
+- info/v2（分配 key）仍报"参数错误:1000"：抓包对比发现网页上传请求不带 heybox_id、参数与签名均已对齐，仍被拒；怀疑账号 web 上传权限/风控（新号等级 2），待观察或换号验证
+- 帖子点赞接口（workshopapi.xiaoheihe.cn/bbs/app/profile/award/link）已抓包到 URL，Payload 待验证
+- 取消点赞参数待验证（同一 URL，未知字段）
+
+---
+
 ## v0.2.1（2026-08-25）
 
 **新增/修复**
 - `heihe_comment.py` 支持楼中楼：新增 `--reply-id` / `--root-id` 参数，回复某条评论时作为内嵌回复发出（对方能收到通知），不再只是独立顶层评论
 - `heihe_delete.py` 支持删评论：新增 `--comment-id` 参数（POST /bbs/app/comment/delete，参数名 `comment_id`），删帖删评论二选一
+- `heihe_post.py` 支持带图发帖：新增 `--image` 参数（可重复），正文以 text+img 块发送（img 的 url 可直接用 imgheybox 或外链图床）；帖子库条目也可带 `images` 字段
 - 帖子库第四篇：《小黑盒评论bot v0.2.0：登录一条命令，签名内置》更新日志帖（已发布，link 188957001）
+- **上传接口签名算法破译**（lib/custom_signer.py 新增 `get_upload_keys`）：与普通接口不同，str2 = path + '?' + 业务参数按字母序，且三字符串不排序（用抓包 hkey=37I1Y65 / P10Y042 双重验证）
 
 **教训**
 - 楼中楼是发评论互动的正确姿势：顶层评论收不到通知，也显得像自言自语
+- 多端登录互顶：一个账号同时挂网页+手机+脚本，后登录的会把先登录的顶掉（表现为 token 报 relogin）
+
+**已知遗留**
+- 上传 key 由服务端分配（info/v2 返回），客户端不可自造；新号 info/v2 可能报"参数错误:1000"（权限/风控待观察）
+- 点赞接口待探测实装
+
+---
+
+## 部署排坑（2026-08-25 整理）
+
+给 fork/自部署的人看的常见坑：
+
+1. **依赖**：`pip install requests qrcode`（qrcode 用于扫码登录时终端显示二维码）
+2. **登录**：先跑 `python scripts/heihe_login.py` 扫码；cookie 存在 `state/auth_state.json`（已被 .gitignore 保护，不会入库）
+3. **多端互顶**：同一账号多端登录会互相顶掉（网页/App/脚本任一新登录都可能让其他端 relogin）。测试时建议用独立小号，别用常用号
+4. **脚本路径**：所有脚本用 `__file__` 定位（SKILL_DIR/LIB_DIR），任何目录下都能跑；但 `config.json` 必须留在 skill 根目录
+5. **签名**：签名逻辑内置在 `scripts/lib/`，普通接口用 `get_keys`，上传类接口（qcloud/cos/upload/*）必须用 `get_upload_keys`（算法不同，用错会"验证参数错误"）
+6. **频率限制**：发帖每天 ≤2、评论每小时 ≤3；超了会触发验证码或风控。评论建议串行发送（并发偶发失败）
+7. **验证码**：响应出现 `show_captcha` 立即停手，去网页端手动解，别硬顶
+8. **敏感文件**：`config.json`（含 API key）、`state/`、`qrcode*.png` 已被 .gitignore 保护；改 config 后 push 前先 `git status` 确认
 
 ---
 

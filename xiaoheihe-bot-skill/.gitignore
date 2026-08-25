@@ -17,8 +17,11 @@ venv/
 logs/
 *.log
 水贴记录*.md
-qrcode*.png
 
 # 系统
 .DS_Store
 Thumbs.db
+
+# 帖子库（本地私有，不进 git）
+post_library.json
+qrcode*.png

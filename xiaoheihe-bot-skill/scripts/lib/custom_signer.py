@@ -9,17 +9,33 @@ from signer_base import SignKeys, Signer
 
 class CustomSigner(Signer):
     def get_keys(self, req_path: str) -> SignKeys:
+        return self._build_keys(req_path, None)
+
+    def get_upload_keys(self, req_path: str, qs_params: dict) -> SignKeys:
+        """上传类接口（qcloud/cos/upload/*）专用签名。
+
+        与 get_keys 的区别（2026-08-25 用昨晚抓包 hkey=37I1Y65 反推破译）：
+        1. str2 不是纯 path，而是 path + '?' + 业务参数按字母序排序拼接（如 app=heybox&client_type=web&...）
+        2. 三个字符串【不按长度排序】，保持 str1/str2/str3 顺序
+        其余（str1/str3/截取 20/MD5/混淆）与 get_keys 相同。
+        """
+        return self._build_keys(req_path, qs_params)
+
+    def _build_keys(self, req_path: str, qs_params: dict | None) -> SignKeys:
         _time = int(time.time())
         nonce = self._get_nonce(_time)
         r = "AB45STUVWZEFGJ6CH01D237IXYPQRKLMN89"
 
         str1 = self._av(str(_time), r, -2)
-        str2 = self._sv(req_path, r)
-        str3 = self._sv(nonce, r)
-
-        str_arr = [str1, str2, str3]
-        # 按字符串长度从小到大排序
-        str_arr.sort(key=len)
+        if qs_params is None:
+            str2 = self._sv(req_path, r)
+            str_arr = [str1, str2, self._sv(nonce, r)]
+            # 按字符串长度从小到大排序
+            str_arr.sort(key=len)
+        else:
+            sorted_qs = "&".join(f"{k}={v}" for k, v in sorted(qs_params.items()))
+            str2 = self._sv(f"{req_path}?{sorted_qs}", r)
+            str_arr = [str1, str2, self._sv(nonce, r)]  # 不排序
 
         new_string = self._new_str(str_arr)
         # 截取前 20 个字符进行 MD5

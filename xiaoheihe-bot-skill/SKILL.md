@@ -22,11 +22,13 @@ description: >
 | 脚本 | 功能 | 用法 |
 |---|---|---|
 | heihe_login.py | 扫码登录 | `python heihe_login.py`（生成/更新 cookie） |
-| heihe_post.py | 发帖 | `--title T --text X [--topic-id 20588]` 或 `--library [索引]` / `--list` |
-| heihe_comment.py | 评论 | `--link-id 181177992 --text "内容"` |
+| heihe_post.py | 发帖（可带图） | `--title T --text X [--topic-id 20588] [--image "URL[,宽,高]"]` 或 `--library [索引]` / `--list` |
+| heihe_comment.py | 评论 / 楼中楼回复 | `--link-id X --text "内容" [--reply-id 父评论id --root-id 根评论id]` |
+| heihe_like.py | 评论点赞 | `--comment-id X` |
 | heihe_feed.py | 看热帖 | `[--topic-id 7214] [--limit 10]` |
-| heihe_fetch.py | 看帖 | `--link-id 188908465`（评论前先读帖） |
-| heihe_delete.py | 删帖 | `--link-id X --yes` |
+| heihe_fetch.py | 看帖（含评论） | `--link-id X [--with-comments]`（评论前先读帖） |
+| heihe_delete.py | 删帖 / 删评论 | `--link-id X --yes` 或 `--comment-id X --yes` |
+| heihe_upload.py | 图片上传（调试中） | 需服务端分配 key，见 CHANGELOG 已知遗留 |
 
 - 帖子库：skill 根目录 `post_library.json`（Agent 写的帖子存档，发帖用 `--library`）
 - 水贴记录：config.json 配 `log_file` 后，发帖/评论自动追加 markdown 记录

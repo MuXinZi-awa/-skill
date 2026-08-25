@@ -106,10 +106,60 @@ def create_post(client, title, text_blocks, topic_ids="20588", desc="",
         return False
 
 
+def get_image_size(url, timeout=15):
+    """下载图片前若干字节解析尺寸（JPEG/PNG），失败返回 None。"""
+    import struct
+    try:
+        resp = requests.get(url, timeout=timeout, stream=True)
+        data = resp.raw.read(65536)
+    except Exception:
+        return None
+    if not data:
+        return None
+    if data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 24:
+        w, h = struct.unpack(">II", data[16:24])
+        return w, h
+    if data[:2] == b"\xff\xd8":
+        i = 2
+        while i < len(data) - 9:
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            marker = data[i + 1]
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                h, w = struct.unpack(">HH", data[i + 5:i + 9])
+                return w, h
+            seg = struct.unpack(">H", data[i + 2:i + 4])[0]
+            i += 2 + seg
+    return None
+
+
+def build_img_block(img_spec):
+    """--image 参数 → img 块。支持 'URL' 或 'URL,宽,高'；无尺寸时尝试下载解析。"""
+    parts = img_spec.split(",")
+    url = parts[0]
+    w = h = None
+    if len(parts) == 3:
+        try:
+            w, h = int(parts[1]), int(parts[2])
+        except ValueError:
+            w = h = None
+    if w is None or h is None:
+        size = get_image_size(url)
+        if size:
+            w, h = size
+    block = {"type": "img", "url": url}
+    if w and h:
+        block["width"] = w
+        block["height"] = h
+    return block
+
+
 def main():
     p = argparse.ArgumentParser(description="小黑盒发帖（xiaoheihe-bot-skill）")
     p.add_argument("--title", help="标题")
     p.add_argument("--text", help="正文")
+    p.add_argument("--image", action="append", help="图片 URL 或 'URL,宽,高'（可重复；或帖子库条目的 images 字段）")
     p.add_argument("--topic-id", default="20588", help="话题/分区ID（默认 20588=密教模拟器）")
     p.add_argument("--library", nargs="?", const="0", help="发帖子库（可索引）")
     p.add_argument("--list", action="store_true", help="列帖子库")
@@ -119,11 +169,12 @@ def main():
     if a.list:
         lib = json.load(open(LIBRARY, encoding="utf-8"))
         for i, post in enumerate(lib):
-            print("[%d] %s  | 话题:%s  | 标签:%s" % (
-                i, post["title"], post.get("topic_ids"), ",".join(post.get("tags", []))))
+            print("[%d] %s  | 话题:%s  | 标签:%s  | 图:%d张" % (
+                i, post["title"], post.get("topic_ids"), ",".join(post.get("tags", [])), len(post.get("images", []))))
         return
 
     cfg = load_config(CONFIG)
+    images = list(a.image or [])
     if a.library is not None:
         lib = json.load(open(LIBRARY, encoding="utf-8"))
         idx = int(a.library) if a.library else 0
@@ -132,7 +183,8 @@ def main():
         text = post["text"]
         topic_ids = str(post.get("topic_ids", "20588"))
         link_tag = int(post.get("link_tag", 27))
-        print("[发帖] 帖子库[%d]: %s (link_tag=%d)" % (idx, title, link_tag))
+        images = images or list(post.get("images", []))
+        print("[发帖] 帖子库[%d]: %s (link_tag=%d, 图:%d张)" % (idx, title, link_tag, len(images)))
     elif a.title and a.text:
         title, text, topic_ids = a.title, a.text, a.topic_id
         link_tag = 27
@@ -140,13 +192,20 @@ def main():
         print("要 --title+--text 或 --library")
         sys.exit(1)
 
+    # 正文块：文字 + 图片（img 块带 url + width/height，服务端缺尺寸会丢图）
+    text_blocks = [{"type": "text", "text": text}]
+    for img_spec in images:
+        text_blocks.append(build_img_block(img_spec))
+
     if a.dry_run:
         print("[dry-run] 标题:", title)
         print("[dry-run] 正文:", text[:80], "...")
+        for b in text_blocks[1:]:
+            print("[dry-run] 图:", b.get("url"), "%sx%s" % (b.get("width", "?"), b.get("height", "?")))
         return
 
     client = build_client(cfg)
-    ok = create_post(client, title, [{"type": "text", "text": text}],
+    ok = create_post(client, title, text_blocks,
                      topic_ids=topic_ids, link_tag=link_tag)
     if ok:
         log_action("发帖", "", title, topic_ids)
