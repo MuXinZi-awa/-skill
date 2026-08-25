@@ -70,18 +70,21 @@ def main():
     p = argparse.ArgumentParser(description="小黑盒评论（xiaoheihe-bot-skill）")
     p.add_argument("--link-id", required=True, type=int, help="帖子 link_id")
     p.add_argument("--text", required=True, help="评论内容")
+    p.add_argument("--reply-id", type=int, default=-1, help="回复的父评论 comment_id（楼中楼）；不传=顶层评论")
+    p.add_argument("--root-id", type=int, default=-1, help="根评论 comment_id（楼中楼）；回复顶层评论时与 --reply-id 相同")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
     if a.dry_run:
-        print("[dry-run] 评论 %s: %s" % (a.link_id, a.text[:60]))
+        mode = "回复%s" % a.reply_id if a.reply_id > 0 else "顶层评论"
+        print("[dry-run] %s %s: %s" % (mode, a.link_id, a.text[:60]))
         return
     cfg = load_config(CONFIG)
     client = build_client(cfg)
-    r = client.create_comment(link_id=a.link_id, text=a.text)
+    r = client.create_comment(link_id=a.link_id, text=a.text, reply_id=a.reply_id, root_id=a.root_id)
     print("[评论] HTTP", getattr(r, "http_status", "?"))
     print("[评论] 结果:", getattr(r, "status", "?"))
     if getattr(r, "status", "") == "ok":
-        log_action("评论", a.link_id, a.text)
+        log_action("回复%s" % a.reply_id if a.reply_id > 0 else "评论", a.link_id, a.text)
     sys.exit(0 if getattr(r, "status", "") == "ok" else 1)
 
 

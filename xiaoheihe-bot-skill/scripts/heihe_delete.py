@@ -29,6 +29,8 @@ from heybox_client import HeyboxCommentClient
 
 DELETE_PATH = "/bbs/app/link/delete"
 DELETE_URL = "https://api.xiaoheihe.cn/bbs/app/link/delete"
+COMMENT_DELETE_PATH = "/bbs/app/comment/delete"
+COMMENT_DELETE_URL = "https://api.xiaoheihe.cn/bbs/app/comment/delete"
 CONFIG = os.path.join(SKILL_DIR, "config.json")
 
 
@@ -67,17 +69,41 @@ def delete_post(client, link_id):
         return False
 
 
+def delete_comment(client, comment_id):
+    keys = client.signer.get_keys(COMMENT_DELETE_PATH)
+    params = dict(client.default_query)
+    params.update({"hkey": keys.hkey, "nonce": keys.nonce, "_time": str(keys.Rtime)})
+    body = {"comment_id": int(comment_id)}
+    resp = client.session.post(COMMENT_DELETE_URL, params=params, data=body,
+                               headers=client.headers, timeout=client.timeout_seconds)
+    print("[删评论] HTTP", resp.status_code)
+    try:
+        d = resp.json()
+        print("[删评论] 响应:", json.dumps(d, ensure_ascii=False)[:300])
+        return d.get("status") == "ok"
+    except Exception:
+        print("[删评论] 原文:", resp.text[:300])
+        return False
+
+
 def main():
-    p = argparse.ArgumentParser(description="小黑盒删帖（xiaoheihe-bot-skill）")
-    p.add_argument("--link-id", required=True, type=int, help="要删的帖子 link_id")
-    p.add_argument("--yes", action="store_true", help="确认删除（删帖不可逆）")
+    p = argparse.ArgumentParser(description="小黑盒删帖/删评论（xiaoheihe-bot-skill）")
+    p.add_argument("--link-id", type=int, help="要删的帖子 link_id")
+    p.add_argument("--comment-id", type=int, help="要删的评论 comment_id")
+    p.add_argument("--yes", action="store_true", help="确认删除（不可逆）")
     a = p.parse_args()
+    if not a.link_id and not a.comment_id:
+        print("请指定 --link-id（删帖）或 --comment-id（删评论）")
+        sys.exit(1)
     if not a.yes:
-        print("⚠️ 删帖不可逆！确认请加 --yes")
+        print("⚠️ 删除不可逆！确认请加 --yes")
         sys.exit(1)
     cfg = load_config(CONFIG)
     client = build_client(cfg)
-    ok = delete_post(client, a.link_id)
+    if a.comment_id:
+        ok = delete_comment(client, a.comment_id)
+    else:
+        ok = delete_post(client, a.link_id)
     sys.exit(0 if ok else 1)
 
 
