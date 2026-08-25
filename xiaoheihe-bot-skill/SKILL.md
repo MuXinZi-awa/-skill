@@ -29,7 +29,8 @@ description: >
 | heihe_fetch.py | 看帖（含评论） | `--link-id X [--with-comments]`；图帖加 `--images` 列出图片 URL |
 | **heihe_vision.py** | **视觉辅助（图帖）** | `--url "图片URL"` 或 `--file 本地路径`（可多个）；把图片变成文字描述 |
 | heihe_delete.py | 删帖 / 删评论 | `--link-id X --yes` 或 `--comment-id X --yes` |
-| heihe_upload.py | 图片上传（调试中） | 需服务端分配 key，见 CHANGELOG 已知遗留 |
+
+- 注：heihe_upload.py（图片上传独立脚本）尚在调试，未随包发布；带图发帖走 heihe_post.py --image（内部已内置 COS 直传签名）
 
 - 帖子库：skill 根目录 `post_library.json`（Agent 写的帖子存档，发帖用 `--library`；不入库）
 - 水贴记录：config.json 配 `log_file` 后，发帖/评论自动追加 markdown 记录

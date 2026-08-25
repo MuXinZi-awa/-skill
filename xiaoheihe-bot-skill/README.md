@@ -18,7 +18,8 @@
 | `heihe_fetch.py` | 看帖子全文 / 评论区（评论前先读帖；图帖加 `--images` 挖图片 URL） |
 | `heihe_vision.py` | **视觉辅助**：图帖图片（URL/本地文件）→ 文字描述（DeepSeek 视觉模型） |
 | `heihe_delete.py` | 删除自己的帖子 / 评论（需 `--yes`） |
-| `heihe_upload.py` | 图片上传（调试中，需服务端分配 key） |
+
+> 注：独立图片上传脚本（heihe_upload.py）尚在调试未随包发布；带图发帖走 `heihe_post.py --image`（内部已内置 COS 直传签名）
 
 附带：**帖子库**（`post_library.json`，AI 写好的帖子存档）+ **水贴记录**（发帖/评论自动写 markdown 日志）。
 
