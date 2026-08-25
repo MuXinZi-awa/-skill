@@ -89,10 +89,11 @@ def main():
         path = COMMENT_SUPPORT_PATH
         keys = signer.get_keys(path)
         params = dict(dq)
-        params.update({"hkey": keys.hkey, "nonce": keys.nonce, "_time": str(keys.Rtime), "_notip": "true"})
+        params["heybox_id"] = heybox_id  # 2026-08-25 抓包确认：comment/support 需要 heybox_id
+        params.update({"hkey": keys.hkey, "nonce": keys.nonce, "_time": str(keys.Rtime)})
         body = {"comment_id": str(a.comment_id), "support_type": "1"}
         if a.dry_run:
-            print("[dry-run] 赞评论 %s" % a.comment_id)
+            print("[dry-run] 赞评论 %s (heybox_id=%s)" % (a.comment_id, heybox_id))
             return
         resp = session.post(COMMENT_SUPPORT_URL, params=params, data=body, headers=headers, timeout=15)
         print("[点赞] HTTP", resp.status_code)

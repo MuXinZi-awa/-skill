@@ -6,7 +6,7 @@
 - **帖子点赞实装**（`heihe_like.py --link-id`）：workshopapi `/bbs/app/profile/award/link` 破译成功——梓帆抓包（hkey=Y7YVS65）反推验证签名模式，现有 `get_keys` 直接命中；`heybox_id` 自动从 cookie（`user_heybox_id`）解析当前账号，不写死。实测 link 189024138 点赞返回 `status: ok`
 
 **已知遗留**
-- 评论点赞（comment/support）仍返回「账号状态异常」：帖子点赞同 cookie 可通，账号本身正常，疑似 support 接口特有风控/参数差异，待继续排查
+- 评论点赞（comment/support）仍返回「账号状态异常」：已对齐梓帆抓包（补齐 heybox_id、去掉 _notip），签名验证通过（能到业务层），仍被拒——疑为账号侧风控（等级/设备标记），非参数问题；帖子点赞（workshopapi）同 cookie 可通，两接口风控策略不同
 
 ---
 
