@@ -1,5 +1,15 @@
 # 更新日志（Changelog）
 
+## v0.3.1（2026-08-25 深夜）
+
+**新增**
+- **帖子点赞实装**（`heihe_like.py --link-id`）：workshopapi `/bbs/app/profile/award/link` 破译成功——梓帆抓包（hkey=Y7YVS65）反推验证签名模式，现有 `get_keys` 直接命中；`heybox_id` 自动从 cookie（`user_heybox_id`）解析当前账号，不写死。实测 link 189024138 点赞返回 `status: ok`
+
+**已知遗留**
+- 评论点赞（comment/support）仍返回「账号状态异常」：帖子点赞同 cookie 可通，账号本身正常，疑似 support 接口特有风控/参数差异，待继续排查
+
+---
+
 ## v0.3.0（2026-08-25）
 
 **新增**

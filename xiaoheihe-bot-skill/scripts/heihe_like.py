@@ -60,9 +60,15 @@ def build_session(cfg):
     dq["x_client_version"] = ""
     dq["web_version"] = "3.0"
     dq.pop("heybox_id", None)  # comment/support 抓包无 heybox_id
+    # 当前账号 heybox_id 从 cookie 解析（user_heybox_id）
+    heybox_id = ""
+    for p in cookie.split("; "):
+        if p.startswith("user_heybox_id="):
+            heybox_id = p.split("=", 1)[1].strip()
+            break
     session = requests.Session()
     session.trust_env = False
-    return session, headers, dq, CustomSigner()
+    return session, headers, dq, CustomSigner(), heybox_id
 
 
 def main():
@@ -77,7 +83,7 @@ def main():
         sys.exit(1)
 
     cfg = load_config(CONFIG)
-    session, headers, dq, signer = build_session(cfg)
+    session, headers, dq, signer, heybox_id = build_session(cfg)
 
     if a.comment_id:
         path = COMMENT_SUPPORT_PATH
@@ -99,8 +105,34 @@ def main():
             ok = False
         sys.exit(0 if ok else 1)
     else:
-        print("[点赞] 帖子点赞接口（workshopapi）参数待验证，暂未实装。先用网页端或后续版本。")
-        sys.exit(1)
+        # 帖子点赞（2026-08-25 梓帆抓包破译）：POST workshopapi /bbs/app/profile/award/link
+        # query: app/os_type/x_app/x_client_type/x_os_type/x_client_version/client_type/web_version/version + heybox_id + hkey/_time/nonce
+        # body: link_id=<id>&award_type=1
+        if not heybox_id:
+            print("[错误] cookie 里没有 user_heybox_id——请重新扫码登录")
+            sys.exit(1)
+        path = LINK_AWARD_PATH
+        keys = signer.get_keys(path)
+        params = dict(dq)
+        params["heybox_id"] = heybox_id
+        params.update({"hkey": keys.hkey, "nonce": keys.nonce, "_time": str(keys.Rtime), "_notip": "true"})
+        body = {"link_id": str(a.link_id), "award_type": "1"}
+        if a.dry_run:
+            print("[dry-run] 赞帖子 %s (heybox_id=%s)" % (a.link_id, heybox_id))
+            print("[dry-run] POST", LINK_AWARD_URL)
+            print("[dry-run] params:", json.dumps(params, ensure_ascii=False))
+            print("[dry-run] body:", json.dumps(body))
+            return
+        resp = session.post(LINK_AWARD_URL, params=params, data=body, headers=headers, timeout=15)
+        print("[点赞] HTTP", resp.status_code)
+        try:
+            d = resp.json()
+            print("[点赞] 响应:", json.dumps(d, ensure_ascii=False)[:200])
+            ok = d.get("status") == "ok"
+        except Exception:
+            print("[点赞] 原文:", resp.text[:200])
+            ok = False
+        sys.exit(0 if ok else 1)
 
 
 if __name__ == "__main__":
