@@ -81,7 +81,7 @@ def main():
     cfg = load_config(CONFIG)
     client = build_client(cfg)
     r = client.create_comment(link_id=a.link_id, text=a.text, reply_id=a.reply_id, root_id=a.root_id)
-    print("[评论] HTTP", getattr(r, "http_status", "?"))
+    print("[评论] HTTP", getattr(r, "http_status_code", "?"))
     print("[评论] 结果:", getattr(r, "status", "?"))
     if getattr(r, "status", "") == "ok":
         log_action("回复%s" % a.reply_id if a.reply_id > 0 else "评论", a.link_id, a.text)
