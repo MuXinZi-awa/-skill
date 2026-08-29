@@ -100,10 +100,16 @@ def create_post(client, title, text_blocks, topic_ids="20588", desc="",
     try:
         d = resp.json()
         print("[发帖] 响应:", json.dumps(d, ensure_ascii=False)[:300])
-        return d.get("status") == "ok"
+        link_id = None
+        res = d.get("result") or {}
+        if isinstance(res, dict):
+            link_id = res.get("linkid") or res.get("link_id")
+        if not link_id:
+            link_id = d.get("linkid") or d.get("link_id")
+        return (d.get("status") == "ok"), link_id
     except Exception:
         print("[发帖] 原文:", resp.text[:300])
-        return False
+        return False, None
 
 
 def get_image_size(url, timeout=15):
@@ -205,10 +211,11 @@ def main():
         return
 
     client = build_client(cfg)
-    ok = create_post(client, title, text_blocks,
-                     topic_ids=topic_ids, link_tag=link_tag)
+    ok, link_id = create_post(client, title, text_blocks,
+                              topic_ids=topic_ids, link_tag=link_tag)
     if ok:
-        log_action("发帖", "", title, topic_ids)
+        log_action("发帖", link_id or "", title, topic_ids)
+        print("[发帖] link-id:", link_id)
     sys.exit(0 if ok else 1)
 
 
