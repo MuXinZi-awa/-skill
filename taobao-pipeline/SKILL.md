@@ -111,7 +111,8 @@ python _batch_pipeline.py --resume
 - 属性清单缺品牌 → 上品/素材生成会兜底错品牌（历史教训：17 品被填泰科）
 
 ### 视频/规格书
-- 视频文件名带敏感词（3P 等）被内容审核拒收——临时改安全名 `_tmp_upload_video.mp4`
+- 视频文件名带敏感词（3P 等）被内容审核拒收——临时改安全名 `_tmp_upload_video.mp4`（0901 起：统一改独特名 `_tmp_料号_视频_HHMMSS.mp4`——同名老视频勾选精确匹配）
+- **0901 视频流程（已验证 3 品双百——必读）**：上传完成检测=videoSelector frame 的**"发布成功"文本**（官方信号）+`_tmp`数量为辅，等 90s（大视频慢）；**点完成后停 1.5s**（新视频加载——防勾老视频）；**勾选前先清空已选**（防重试残留双勾）+点第一个 `_tmp` 卡片 checkbox（JS 直接点——点图片=预览不勾选）；**验证/确认上传段必须在 for fr 循环外**（break 会跳过——勾了不应用）；frame 只处理 videoSelector（其他 continue——5 frame 全等浏览器超时死）
 - 确认上传后等 3s（视频应用完——提交时不补传 30s）
 - 剪辑器"等 enabled"：is_enabled() 检测 React 不可靠——上限 15s（5×3s）——素材正常 2-3s 走
 - **规格书上传**：set_input_files 直接注入（点按钮弹 OS 对话框——filechooser 不拦截）；display:none input 塞值有效
