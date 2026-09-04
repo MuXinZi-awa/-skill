@@ -122,6 +122,15 @@ python _batch_pipeline.py --resume
 - is_label_like 过滤标签图（边缘比/条码/纸箱检测）
 - 双百 = "流量加速中"；无视频不双百；创意异常=图与品牌不一致/水印
 
+### 0903 老品双百优化（大项目——必读）
+- **双百 API 全量扫**：`_mtop_api.MtopClient` + `mtop.taobao.sell.pc.manage.async`（pageSize 50——100 不支持）——dataSource 行 diagnoseInfoV3（basicScore/speScore/scoreLabel"流量加速中"）——列表**不带商家编码**（outerId 要 qn 后台 qn.taobao.com/home.htm/SellManage/on_sale 的"编码"字段）——**每 20 页增量保存 CSV**（防中断丢）
+- **料号提取正则 v3**（标题 5 模式：分隔符连接|纯数字|字母+数字|数字开头字母数字|长混合串）+品牌前缀/停用词过滤+打分（开头>结尾>中间）——补到 99.5%（5037 里 26 个短料号如 SS20M2F 走 qn 编码）
+- **品牌映射**：brand_map.csv 用 ERP（产品变体 xlsx——名称列=料号/属性值列"品牌:xxx"）全量扩充（526→3295）——未识别大幅归位
+- **属性爬** fetch_attrs（TE 官网 Playwright——按 brand_map 路由——跳过已有——**超时注意**：30 分钟不够 500 品——用 60 分钟+）——规格书 _grab_specs（Octopart）
+- **ai_schedule 默认 seedream_4.5**（0903：4.5 不耗积分——5.0 pro 贵 8 积分/张留给贵重活）
+- 采购站（digikey/findchips/bom.ai）web_fetch 反爬强——Octopart 主力
+- **老品优化≠上品**（已上架品不能重新发布——编辑现有商品——素材/属性环节复用——梓帆线索：脚本最初就是优化双百的（总装源头待找）
+
 ---
 
 ## 六、参数速查
