@@ -1,0 +1,39 @@
+{
+  "manifestVersion": 1,
+  "id": "apimon",
+  "name": "API 用量",
+  "version": "0.2.0",
+  "description": "DeepSeek API 余额 / 消耗 / 缓存命中（读本地用量账本 + 余额接口，不用去官网）",
+  "minAppVersion": "0.159.0",
+  "trust": "full-access",
+  "capabilities": ["network.fetch"],
+  "network": {
+    "allowedHosts": ["api.deepseek.com"],
+    "methods": ["GET"],
+    "defaultTimeoutMs": 15000,
+    "maxResponseBytes": 65536
+  },
+  "ui": { "hostCapabilities": [] },
+  "contributes": {
+    "widget": {
+      "title": { "zh": "API 用量", "en": "API Usage" },
+      "route": "/widget",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2v20\"/><path d=\"M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6\"/></svg>"
+    },
+    "page": {
+      "title": { "zh": "API 用量", "en": "API Usage" },
+      "route": "/page",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2v20\"/><path d=\"M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6\"/></svg>"
+    },
+    "configuration": {
+      "properties": {
+        "apiKey": {
+          "type": "string",
+          "title": "DeepSeek API Key",
+          "description": "仅用于查询余额，存本地插件配置，不进任何仓库",
+          "default": ""
+        }
+      }
+    }
+  }
+}
